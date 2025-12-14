@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Header from "./components/Header";
 import Navbar from "./components/Navbar";
 import HeroSlider from "./components/HeroSlider";
@@ -5,9 +6,15 @@ import MovieRow from "./components/MovieRow";
 import Footer from "./components/Footer";
 
 export default function App() {
+  const [dark, setDark] = useState(false);
+
   return (
-    <div className="app">
-      <Header />
+    <div className={`app ${dark ? "dark" : ""}`}>
+      <Header
+        dark={dark}
+        toggleDark={() => setDark(!dark)}
+      />
+
       <Navbar />
       <HeroSlider />
       <MovieRow title="Most Popular" />
