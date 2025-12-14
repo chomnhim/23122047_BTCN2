@@ -91,7 +91,7 @@ const TopRevenueMovies = () => {
         <div className="hero-content">
           <div className="poster-container">
              <img 
-               src={movie.image || 'https://via.placeholder.com/300x450?text=No+Image'} 
+               src={movie.image || movie.poster_path ? (movie.image || `https://image.tmdb.org/t/p/w500${movie.poster_path}`) : 'https://via.placeholder.com/300x450'} 
                alt={movie.title} 
                className="hero-poster"
                onError={(e) => { e.target.src = 'https://via.placeholder.com/300x450?text=No+Image'; }}
@@ -99,7 +99,33 @@ const TopRevenueMovies = () => {
           </div>
           
           <div className="movie-info-center">
+            <h2 className="hero-title">{movie.title}</h2>
+
+            <div className="hero-meta">
+              <span className="meta-item rating">
+                ⭐ {movie.rate || movie.vote_average || 'N/A'}
+              </span>
+
+              <span className="dot-sep">•</span>
+
+              <span className="meta-item">
+                📅 {movie.year || (movie.release_date ? new Date(movie.release_date).getFullYear() : 'N/A')}
+              </span>
+
+              <span className="dot-sep">•</span>
+
+              {movie.box_office_revenue && (
+                <span className="meta-item revenue-text">
+                  💰 {movie.box_office_revenue}
+                </span>
+              )}
+            </div>
             
+            <div className="hero-meta-extra">
+               <span className="meta-item">
+                ⏳ {movie.runtime ? `${movie.runtime} min` : (movie.length || 'N/A')}
+              </span>
+            </div>
           </div>
         </div>
 
