@@ -4,7 +4,7 @@ export default function HeroSlider() {
       <span className="arrow left">‹</span>
 
       <img
-        src="https://via.placeholder.com/240x360?text=Poster"
+        src="https://via.placeholder.com/240x360?text=Metropolis"
         alt="hero"
       />
 

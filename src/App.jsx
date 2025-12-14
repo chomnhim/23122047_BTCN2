@@ -10,11 +10,7 @@ export default function App() {
 
   return (
     <div className={`app ${dark ? "dark" : ""}`}>
-      <Header
-        dark={dark}
-        toggleDark={() => setDark(!dark)}
-      />
-
+      <Header dark={dark} toggleDark={() => setDark(!dark)} />
       <Navbar />
       <HeroSlider />
       <MovieRow title="Most Popular" />
