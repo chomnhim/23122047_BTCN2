@@ -186,3 +186,105 @@ body {
   font-size: 12px;
   text-align: left;
 }
+
+.hero-slider-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 20px 0;
+  min-height: 450px;
+}
+
+.hero-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 600px;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.poster-container {
+  margin-bottom: 15px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.hero-poster {
+  width: 250px;
+  height: 375px;
+  object-fit: cover;
+  display: block;
+}
+
+.movie-info-center {
+  color: var(--text);
+}
+
+.hero-title {
+  font-size: 24px;
+  margin: 10px 0;
+  color: var(--title);
+}
+
+.hero-meta {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  font-size: 14px;
+  color: #888;
+}
+
+.revenue-text {
+  color: #4CAF50;
+  font-weight: bold;
+}
+
+.nav-btn {
+  background: transparent;
+  border: 1px solid var(--input-border);
+  color: var(--text);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 20px;
+  transition: all 0.2s;
+}
+
+.nav-btn:hover {
+  background: var(--input-bg);
+  transform: scale(1.1);
+}
+
+.slider-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  background-color: #ccc;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.dot.active {
+  background-color: #e74c3c;
+  transform: scale(1.2);
+}
