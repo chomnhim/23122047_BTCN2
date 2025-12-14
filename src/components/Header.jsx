@@ -1,9 +1,15 @@
-export default function Header() {
+export default function Header({ dark, toggleDark }) {
   return (
     <div className="header">
-      <span>23122047</span>
-      <span className="header-title">Movies info</span>
-      <span>🌙</span>
+      <span>&lt;MSSV&gt;</span>
+
+      <span style={{ fontWeight: "bold" }}>
+        Movies info
+      </span>
+
+      <button onClick={toggleDark}>
+        {dark ? "☀️" : "🌙"}
+      </button>
     </div>
   );
 }
