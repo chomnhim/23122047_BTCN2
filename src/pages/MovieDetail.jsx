@@ -12,6 +12,7 @@ export default function MovieDetail() {
   const headers = { 'Content-Type': 'application/json', 'x-app-token': appToken };
 
   useEffect(() => {
+    // 1. Lấy thông tin phim
     const u = `/api/api/movies/${id}`;
     Promise.all([
       fetch(u, { headers }),
@@ -25,22 +26,56 @@ export default function MovieDetail() {
     })
     .catch(e => setS({ m: null, r: [], l: false, e: e.toString() }));
 
+    // 2. Kiểm tra phim đã có trong Favorite chưa
     if (user?.token) {
       fetch('/api/api/users/favorites', { headers: { ...headers, 'Authorization': `Bearer ${user.token}` } })
         .then(r => r.json())
-        .then(d => { if (d.data?.some(x => x.id == id)) setIsFav(true); })
+        .then(d => { 
+          const list = d.data || d;
+          // So sánh lỏng (==) để tránh lỗi khác kiểu dữ liệu (string vs number)
+          if (Array.isArray(list) && list.some(x => x.id == id || x.movieId == id)) {
+            setIsFav(true);
+          }
+        })
         .catch(() => {});
     }
   }, [id, user]);
 
   const toggleFav = async () => {
-    if (!user) return alert('Please login first!');
+    if (!user) return alert('Vui lòng đăng nhập!');
+    
     const method = isFav ? 'DELETE' : 'POST';
-    const res = await fetch(`/api/api/users/favorites/${id}`, {
+    const url = `/api/api/users/favorites/${id}`;
+    
+    const options = {
       method,
       headers: { ...headers, 'Authorization': `Bearer ${user.token}` }
-    });
-    if (res.ok) setIsFav(!isFav);
+    };
+
+    // QUAN TRỌNG: Gửi đầy đủ thông tin để Backend lưu
+    if (method === 'POST' && s.m) {
+      options.body = JSON.stringify({
+        id: s.m.id,
+        movieId: s.m.id, // Gửi thêm trường này phòng khi Backend cần
+        title: s.m.title,
+        image: s.m.image || s.m.poster || s.m.poster_path,
+        poster_path: s.m.image || s.m.poster || s.m.poster_path,
+        rate: s.m.ratings?.imDb || s.m.rate || 0,
+        year: s.m.year,
+        release_date: s.m.releaseDate || s.m.release_date || `${s.m.year}-01-01`
+      });
+    }
+
+    try {
+      const res = await fetch(url, options);
+      if (res.ok) {
+        setIsFav(!isFav);
+      } else {
+        alert('Không thể lưu trạng thái. Vui lòng thử lại.');
+      }
+    } catch (e) {
+      alert('Lỗi kết nối server!');
+    }
   };
 
   const m = s.m;
