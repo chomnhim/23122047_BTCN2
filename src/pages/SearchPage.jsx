@@ -9,106 +9,74 @@ export default function SearchPage() {
 
   const appToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IjIzXzMxIiwicm9sZSI6InVzZXIiLCJhcGlfYWNjZXNzIjp0cnVlLCJpYXQiOjE3NjUzNjE3NjgsImV4cCI6MTc3MDU0NTc2OH0.O4I48nov3NLaKDSBhrPe9rKZtNs9q2Tkv4yK0uMthoo";
 
-  const getMovieYear = (movie) => {
-    if (!movie) return 'N/A';
-    
-    if (movie.year != null && movie.year !== '' && movie.year !== 'N/A') {
-      return movie.year;
-    }
-
-    if (movie.release_date && movie.release_date !== 'N/A') {
-      if (/^\d{4}$/.test(String(movie.release_date))) return movie.release_date;
-      const date = new Date(movie.release_date);
-      if (!isNaN(date.getTime())) return date.getFullYear();
-    }
-
-    // 3. Kiểm tra 'first_air_date'
-    if (movie.first_air_date && movie.first_air_date !== 'N/A') {
-      if (/^\d{4}$/.test(String(movie.first_air_date))) return movie.first_air_date;
-      const date = new Date(movie.first_air_date);
-      if (!isNaN(date.getTime())) return date.getFullYear();
-    }
-    
-    // 4. Kiểm tra 'releaseDate'
-    if (movie.releaseDate && movie.releaseDate !== 'N/A') {
-      if (/^\d{4}$/.test(String(movie.releaseDate))) return movie.releaseDate;
-      const date = new Date(movie.releaseDate);
-      if (!isNaN(date.getTime())) return date.getFullYear();
-    }
-    
-    return 'N/A';
-  };
-
   useEffect(() => {
-    const fetchAllAndFilter = async () => {
+    const fetchSearchResults = async () => {
       if (!query.trim()) return;
       setLoading(true);
 
       try {
-        const firstPageRes = await fetch('/api/api/movies?page=1', {
-          headers: { 'Content-Type': 'application/json', 'x-app-token': appToken }
-        });
+        const endpointsToTry = [
+          `/api/movies/search?q=${encodeURIComponent(query)}`,
+          `/api/api/movies/search?q=${encodeURIComponent(query)}`,
+        ];
 
-        if (!firstPageRes.ok) throw new Error("API Error");
+        let foundData = false;
 
-        const firstPageData = await firstPageRes.json();
-        let rawMovies = firstPageData.data || [];
-        
-        const totalPages = firstPageData.pagination ? firstPageData.pagination.total_pages : 1;
+        for (const endpoint of endpointsToTry) {
+          try {
+            const response = await fetch(endpoint, {
+              headers: { 'Content-Type': 'application/json', 'x-app-token': appToken }
+            });
 
-        if (totalPages > 1) {
-          const promises = [];
-          for (let page = 2; page <= totalPages; page++) {
-            promises.push(
-              fetch(`/api/api/movies?page=${page}`, {
-                headers: { 'Content-Type': 'application/json', 'x-app-token': appToken }
-              }).then(res => res.json()).catch(() => ({ data: [] }))
-            );
-          }
-          const otherPagesData = await Promise.all(promises);
-          otherPagesData.forEach(result => {
-            if (result.data) {
-              rawMovies = [...rawMovies, ...result.data];
+            if (response.ok) {
+              const result = await response.json();
+              const searchResults = result.data || result.results || [];
+              
+              if (Array.isArray(searchResults)) {
+                 setMovies(searchResults);
+                 foundData = true;
+                 break; 
+              }
             }
-          });
+          } catch (err) {
+            console.error("Lỗi endpoint:", endpoint, err);
+          }
         }
 
-        const uniqueMoviesMap = new Map();
-        rawMovies.forEach(movie => {
-            if (movie.id && !uniqueMoviesMap.has(movie.id)) {
-                uniqueMoviesMap.set(movie.id, movie);
-            }
-        });
-        const uniqueMovies = Array.from(uniqueMoviesMap.values());
-
-        const lowerQuery = query.toLowerCase().trim();
-        const filteredResults = uniqueMovies.filter(movie => {
-          const safeText = (text) => (text ? String(text).toLowerCase() : "");
-          
-          const yearStr = String(getMovieYear(movie) || '');
-
-          const matchGenre = Array.isArray(movie.genres) 
-             ? movie.genres.some(g => safeText(g).includes(lowerQuery))
-             : safeText(movie.genres).includes(lowerQuery);
-
-          return safeText(movie.title).includes(lowerQuery) || 
-                 safeText(movie.director).includes(lowerQuery) || 
-                 (Array.isArray(movie.cast) ? movie.cast.some(actor => safeText(actor).includes(lowerQuery)) : safeText(movie.cast).includes(lowerQuery)) ||
-                 yearStr.includes(lowerQuery) || 
-                 matchGenre;
-        });
-
-        setMovies(filteredResults);
+        if (!foundData) setMovies([]);
 
       } catch (err) {
-        console.error("Lỗi:", err);
+        console.error("Lỗi tìm kiếm:", err);
+        setMovies([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAllAndFilter();
+    fetchSearchResults();
   }, [query]);
+
+  const getMovieYear = (movie) => {
+    if (!movie) return 'N/A';
+    
+    if (movie.year && !isNaN(movie.year)) return movie.year;
+
+    const dateCandidates = [
+        movie.release_date, 
+        movie.releaseDate, 
+        movie.first_air_date,
+        movie.premiere_date
+    ];
+
+    for (const rawDate of dateCandidates) {
+        if (rawDate) {
+            const yearMatch = String(rawDate).match(/\d{4}/);
+            if (yearMatch) return yearMatch[0];
+        }
+    }
+    
+    return 'N/A';
+  };
 
   const getPosterURL = (movie) => {
     let imgSrc = movie.poster_path || movie.poster || movie.image;
@@ -133,11 +101,12 @@ export default function SearchPage() {
       </div>
       
       {loading ? (
-        <div className="loading-state">Đang tìm kiếm...</div>
+        <div className="loading-state">Đang tìm kiếm trên Server...</div>
       ) : movies.length > 0 ? (
         <div className="search-grid">
           {movies.map(movie => {
             const posterSrc = getPosterURL(movie);
+            const displayYear = getMovieYear(movie); 
             
             return (
               <Link to={`/movie/${movie.id}`} key={movie.id} className="search-card">
@@ -163,12 +132,10 @@ export default function SearchPage() {
                 
                 <div className="card-content">
                   <h3 className="movie-title">
-                    {movie.title}
+                    {movie.title} <span style={{ fontWeight: 'normal', color: '#888' }}>({displayYear})</span>
                   </h3>
                   
-                  <div className="movie-genre">
-                      {formatGenres(movie.genres)}
-                  </div>
+                  <div className="movie-genre">{formatGenres(movie.genres)}</div>
                 </div>
               </Link>
             );
@@ -180,6 +147,7 @@ export default function SearchPage() {
         </div>
       )}
 
+      {/* CSS */}
       <style>{`
         .search-page-container { padding: 30px 40px; min-height: 80vh; background-color: var(--bg); }
         .search-header { margin-bottom: 30px; border-bottom: 1px solid #ddd; padding-bottom: 15px; }
@@ -207,14 +175,9 @@ export default function SearchPage() {
             font-size: 15px; font-weight: bold; margin: 0 0 5px 0; line-height: 1.3; color: var(--title); 
         }
         
-        .movie-genre { 
-            font-size: 13px; color: #888; font-style: italic; margin-top: 2px;
-        }
+        .movie-genre { font-size: 13px; color: #888; font-style: italic; margin-top: 2px; }
         
-        .loading-state, .no-results { 
-          text-align: center; padding: 50px 20px; color: #666; font-size: 16px; 
-        }
-        
+        .loading-state, .no-results { text-align: center; padding: 50px 20px; color: #666; font-size: 16px; }
         .dark .search-card { background: #1f2327; border-color: #333; }
         .dark .card-image-wrapper { background: #2c3e50; }
         .dark .movie-genre { color: #aaa; }
