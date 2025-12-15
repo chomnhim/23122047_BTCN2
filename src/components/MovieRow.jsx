@@ -6,7 +6,6 @@ const MovieRow = ({ title, type }) => {
   const [startIndex, setStartIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false); 
 
-  // Token API
   const appToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IjIzXzMxIiwicm9sZSI6InVzZXIiLCJhcGlfYWNjZXNzIjp0cnVlLCJpYXQiOjE3NjUzNjE3NjgsImV4cCI6MTc3MDU0NTc2OH0.O4I48nov3NLaKDSBhrPe9rKZtNs9q2Tkv4yK0uMthoo";
 
   useEffect(() => {
@@ -15,7 +14,6 @@ const MovieRow = ({ title, type }) => {
       const baseUrl = `/api/api/movies/${endpointSuffix}`; 
 
       try {
-        // BƯỚC 1: Lấy danh sách Top Rated sơ bộ (chỉ có ID, Title...)
         const resPage1 = await fetch(`${baseUrl}?page=1`, {
           headers: { 'Content-Type': 'application/json', 'x-app-token': appToken }
         });
@@ -25,7 +23,6 @@ const MovieRow = ({ title, type }) => {
         const dataPage1 = await resPage1.json();
         let simpleMovies = dataPage1.data || [];
         
-        // Lấy thêm trang 2, 3, 4 nếu cần để đủ số lượng
         const totalPages = dataPage1.pagination ? dataPage1.pagination.total_pages : 1;
         const maxPagesToFetch = Math.min(totalPages, 4); 
 
@@ -44,29 +41,23 @@ const MovieRow = ({ title, type }) => {
           });
         }
 
-        // Cắt lấy 30 phim đầu tiên
         const top30 = simpleMovies.slice(0, 30);
 
-        // BƯỚC 2: "NÂNG CẤP" DỮ LIỆU
-        // Gọi API chi tiết cho từng phim để lấy thông tin Năm sản xuất chính xác
         const detailedMovies = await Promise.all(
           top30.map(async (movie) => {
             try {
-              // Gọi endpoint chi tiết: /api/api/movies/{id}
               const detailRes = await fetch(`/api/api/movies/${movie.id}`, {
                  headers: { 'Content-Type': 'application/json', 'x-app-token': appToken }
               });
               
               if (detailRes.ok) {
                 const detailData = await detailRes.json();
-                // API chi tiết thường trả về dữ liệu đầy đủ có trường 'year'
-                // Ưu tiên dữ liệu chi tiết, nếu lỗi thì dùng lại dữ liệu cũ
                 return detailData.data || detailData || movie;
               }
             } catch (err) {
               console.warn(`Lỗi lấy chi tiết phim ${movie.id}`, err);
             }
-            return movie; // Trả về phim gốc nếu không lấy được chi tiết
+            return movie; 
           })
         );
 
@@ -80,14 +71,11 @@ const MovieRow = ({ title, type }) => {
     fetchMovies();
   }, [type]);
 
-  // --- HÀM XỬ LÝ NĂM (Vẫn giữ logic mạnh mẽ để parse mọi định dạng) ---
   const getMovieYear = (movie) => {
     if (!movie) return 'N/A';
     
-    // 1. Kiểm tra trường 'year' (Giờ đây đã có nhờ Bước 2)
     if (movie.year && !isNaN(movie.year)) return movie.year;
 
-    // 2. Quét các trường ngày tháng khác để dự phòng
     const dateCandidates = [
         movie.release_date, 
         movie.releaseDate, 
@@ -104,7 +92,6 @@ const MovieRow = ({ title, type }) => {
     
     return 'N/A';
   };
-  // -----------------------------------------------------
 
   const getPosterURL = (movie) => {
     const imgSrc = movie.image || movie.poster || movie.poster_path;
@@ -113,7 +100,6 @@ const MovieRow = ({ title, type }) => {
     return `https://image.tmdb.org/t/p/w500${imgSrc}`;
   };
 
-  // --- LOGIC SLIDER GIỮ NGUYÊN ---
   const itemsPerPage = 3; 
 
   const handlePageChange = (direction) => {
@@ -161,7 +147,6 @@ const MovieRow = ({ title, type }) => {
                         <h4 className="card-title">{movie.title}</h4>
                         
                         <div className="card-meta">
-                            {/* Giờ đây thông tin năm sẽ chính xác hơn rất nhiều */}
                             {getMovieYear(movie)}
                         </div>
                         
