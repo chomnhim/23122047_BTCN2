@@ -11,6 +11,7 @@ import PersonDetail from "./pages/PersonDetail";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Favorites from "./pages/Favorites";
+import Profile from "./pages/Profile";
 
 const Layout = ({ dark, toggleDark }) => (
   <div className={`app ${dark ? "dark" : ""}`}>
@@ -41,7 +42,7 @@ export default function App() {
           <Route path="register" element={<Register />} />
           
           <Route element={<ProtectedRoute />}>
-             <Route path="profile" element={<div style={{padding:50, textAlign:'center', color:'#fff'}}><h1>Profile Page</h1></div>} />
+             <Route path="profile" element={<Profile />} />
              <Route path="favorites" element={<Favorites />} />
           </Route>
         </Route>
