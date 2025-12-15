@@ -4,27 +4,80 @@ import { useAuth } from "../context/AuthContext";
 
 export default function Header({ dark, toggleDark }) {
   const { user, logout } = useAuth();
+  const styles = {
+    container: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      height: '60px',
+      padding: '0 20px',
+      backgroundColor: dark ? '#2c3e50' : '#fae8ea', 
+      color: dark ? '#fff' : '#000',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+    },
+    sideSection: {
+      flex: 1, 
+      display: 'flex',
+      alignItems: 'center'
+    },
+    rightSection: {
+      flex: 1,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'flex-end', 
+      gap: '15px'
+    },
+    logo: {
+      textDecoration: 'none',
+      fontWeight: 'bold',
+      fontSize: '1.5rem',
+      color: 'inherit',
+      whiteSpace: 'nowrap'
+    },
+    btn: {
+      textDecoration: 'none',
+      color: 'inherit',
+      cursor: 'pointer',
+      background: 'none',
+      border: 'none',
+      fontSize: '1rem',
+      fontWeight: '500'
+    }
+  };
 
   return (
-    <div className="header">
-      <div className="left"><span>23122047</span></div>
-      <Link to="/" className="logo">Movies Info</Link>
-      <div className="right">
+    <div style={styles.container}>
+      <div style={styles.sideSection}>
+        <span>23122047</span>
+      </div>
+
+      <Link to="/" style={styles.logo}>Movies Info</Link>
+
+      <div style={styles.rightSection}>
         {user ? (
           <>
-            <span className="wel">Hi, <strong>{user.username || "User"}</strong></span>
-            <Link to="/profile" className="btn">Profile</Link>
-            <button onClick={logout} className="btn">Logout</button>
+            <span style={{ marginRight: 5 }} className="mobile-hide">
+              Hi, <strong>{user.username}</strong>
+            </span>
+            <Link to="/profile" style={styles.btn}>Profile</Link>
+            <button onClick={logout} style={styles.btn}>Logout</button>
           </>
         ) : (
           <>
-            <Link to="/login" className="btn">Login</Link>
-            <Link to="/register" className="btn">Register</Link>
+            <Link to="/login" style={styles.btn}>Login</Link>
+            <Link to="/register" style={styles.btn}>Register</Link>
           </>
         )}
-        <button onClick={toggleDark} className="theme">{dark ? "☀️" : "🌙"}</button>
+        <button onClick={toggleDark} style={{...styles.btn, fontSize: '1.2rem', marginLeft: '5px'}}>
+          {dark ? "☀️" : "🌙"}
+        </button>
       </div>
-      <style>{`.header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 20px;height:60px;box-shadow:0 1px 3px rgba(0,0,0,.1)}.left{justify-self:start;font-weight:500}.logo{justify-self:center;text-decoration:none;color:inherit;font-weight:800;font-size:1.5rem;white-space:nowrap}.right{justify-self:end;display:flex;align-items:center;gap:15px}.btn{text-decoration:none;color:inherit;font-weight:500;cursor:pointer;background:0 0;border:none;font-size:1rem;padding:0}.btn:hover{color:#e74c3c}.theme{background:0 0;border:none;cursor:pointer;font-size:1.2rem;padding-left:5px}@media(max-width:700px){.header{display:flex;justify-content:space-between}.left,.wel{display:none}}`}</style>
+
+      <style>{`
+        @media (max-width: 600px) {
+          .mobile-hide { display: none !important; }
+        }
+      `}</style>
     </div>
   );
 }
