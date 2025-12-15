@@ -71,10 +71,10 @@ const MovieRow = ({ title, type }) => {
   const visibleMovies = movies.slice(startIndex, startIndex + itemsPerPage);
 
   return (
-    <div className="movie-row-section" style={{ margin: '30px 0' }}>
+    <div className="movie-row-section" style={{ margin: '5px 0 10px 0' }}>
       <h3 style={{ 
-        textAlign: 'left', marginLeft: '40px', fontSize: '24px', fontWeight: 'bold',
-        borderLeft: '5px solid #e74c3c', paddingLeft: '15px', marginBottom: '20px'
+        textAlign: 'left', marginLeft: '40px', fontSize: '20px', fontWeight: 'bold',
+        borderLeft: '4px solid #e74c3c', paddingLeft: '5px', marginBottom: '10px'
       }}>
         {title}
       </h3>

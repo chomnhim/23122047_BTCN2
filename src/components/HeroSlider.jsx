@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 
 const TopRevenueMovies = () => {
   const [movies, setMovies] = useState([]);
@@ -81,21 +82,28 @@ const TopRevenueMovies = () => {
   const movie = movies[currentIndex];
 
   return (
-    <div className="top-revenue-section" style={{ padding: '0 20px', margin: '20px 0' }}>
+    <div className="top-revenue-section" style={{ padding: '0 20px', margin: '10px 0 5px 0' }}>
       
       <div className="hero-slider-container">
         <button className="nav-btn prev-btn" onClick={handlePrev}>
           &#10094;
         </button>
 
-        <div className="hero-content">
+        <div className="hero-content" key={movie.id}>
+          
           <div className="poster-container">
-             <img 
-               src={movie.image || movie.poster_path ? (movie.image || `https://image.tmdb.org/t/p/w500${movie.poster_path}`) : 'https://via.placeholder.com/300x450'} 
-               alt={movie.title} 
-               className="hero-poster"
-               onError={(e) => { e.target.src = 'https://via.placeholder.com/300x450?text=No+Image'; }}
-             />
+             <Link to={`/movie/${movie.id}`} style={{ display: 'block', position: 'relative' }}>
+               <img 
+                 src={movie.image || movie.poster_path ? (movie.image || `https://image.tmdb.org/t/p/w500${movie.poster_path}`) : 'https://via.placeholder.com/300x450'} 
+                 alt={movie.title} 
+                 className="hero-poster"
+                 onError={(e) => { e.target.src = 'https://via.placeholder.com/300x450?text=No+Image'; }}
+               />
+               
+               <div className="hero-overlay">
+                  <div className="play-icon">▶</div>
+               </div>
+             </Link>
           </div>
           
           <div className="movie-info-center">
@@ -122,9 +130,6 @@ const TopRevenueMovies = () => {
             </div>
             
             <div className="hero-meta-extra">
-               <span className="meta-item">
-                ⏳ {movie.runtime ? `${movie.runtime} min` : (movie.length || 'N/A')}
-              </span>
             </div>
           </div>
         </div>
