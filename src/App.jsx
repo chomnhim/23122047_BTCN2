@@ -5,6 +5,7 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import MovieDetail from "./pages/MovieDetail";
+import SearchPage from "./pages/SearchPage"; 
 
 function Layout({ dark, toggleDark }) {
   return (
@@ -27,6 +28,9 @@ export default function App() {
       <Route path="/" element={<Layout dark={dark} toggleDark={() => setDark(!dark)} />}>
         <Route index element={<Home />} />
         <Route path="movie/:id" element={<MovieDetail />} />
+        
+        <Route path="search" element={<SearchPage />} /> 
+        
       </Route>
     </Routes>
   );
