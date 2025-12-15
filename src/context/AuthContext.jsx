@@ -24,7 +24,9 @@ export const AuthProvider = ({ children }) => {
       if (!res.ok) throw new Error('Login failed');
 
       const result = await res.json();
-      const userData = result.data || result;
+      const apiData = result.data || result;
+      
+      const userData = { ...apiData, username: username };
       
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
