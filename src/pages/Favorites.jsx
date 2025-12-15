@@ -13,48 +13,55 @@ export default function Favorites() {
       fetch('/api/api/users/favorites', {
         headers: { 'Content-Type': 'application/json', 'x-app-token': appToken, 'Authorization': `Bearer ${user.token}` }
       })
-      .then(res => res.ok ? res.json() : { data: [] })
-      .then(d => { setFavs(d.data || []); setLoading(false); })
+      .then(r => r.json())
+      .then(d => {
+        setFavs(Array.isArray(d) ? d : (d.data || []));
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
+    } else setLoading(false);
   }, [user]);
 
-  const removeFav = async (id) => {
-    if (!window.confirm('Xóa phim này khỏi danh sách?')) return;
+  const removeFav = async (m) => {
+    if (!window.confirm(`Xóa "${m.title || 'phim'}"?`)) return;
+    const id = m.movieId || m.id;
     try {
       const res = await fetch(`/api/api/users/favorites/${id}`, {
         method: 'DELETE',
         headers: { 'x-app-token': appToken, 'Authorization': `Bearer ${user.token}` }
       });
-      if (res.ok) setFavs(favs.filter(m => m.id !== id));
+      if (res.ok) setFavs(favs.filter(x => (x.movieId || x.id) !== id));
     } catch (e) {}
   };
 
-  const getImg = (p) => p ? (p.startsWith('http') ? p : `https://image.tmdb.org/t/p/w300${p}`) : 'https://placehold.co/200x300?text=No+Image';
+  const getImg = (m) => {
+    const s = m.image || m.poster_path || m.poster;
+    return s ? (s.startsWith('/') ? `https://image.tmdb.org/t/p/w300${s}` : s) : 'https://placehold.co/200x300?text=No+Image';
+  };
 
-  if (loading) return <div className="loading-box"><div className="spinner"></div><style>{`.loading-box{min-height:80vh;display:flex;justify-content:center;align-items:center;color:#333}.spinner{width:50px;height:50px;border:5px solid rgba(0,0,0,.1);border-top:5px solid #e74c3c;border-radius:50%;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}`}</style></div>;
-  if (!user) return <div style={{padding:50,textAlign:'center',color:'#333',minHeight:'50vh',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.2rem'}}>Vui lòng đăng nhập để xem danh sách yêu thích.</div>;
+  if (loading) return <div className="c-box"><div className="spin"></div><style>{`.c-box{min-height:60vh;display:flex;justify-content:center;align-items:center}.spin{width:40px;height:40px;border:4px solid #ddd;border-top-color:#e74c3c;border-radius:50%;animation:s 1s infinite}@keyframes s{to{transform:rotate(360deg)}}`}</style></div>;
+  if (!user) return <div className="c-box"><h3>Vui lòng đăng nhập.</h3></div>;
 
   return (
-    <div className="fav-page">
-      <h2 className="page-title">Danh sách yêu thích ({favs.length})</h2>
-      <div className="grid">
-        {favs.map(m => (
-          <div key={m.id} className="card">
-            <Link to={`/movie/${m.id}`} className="img-link">
-              <img src={getImg(m.image || m.poster_path)} alt={m.title} onError={e=>e.target.src='https://placehold.co/200x300?text=Error'}/>
-            </Link>
-            <div className="info">
-              <Link to={`/movie/${m.id}`} className="title">{m.title}</Link>
-              <button onClick={() => removeFav(m.id)} className="del-btn">Xóa</button>
+    <div className="fav-con">
+      <h2 className="ti">Danh sách yêu thích ({favs.length})</h2>
+      {favs.length === 0 ? (
+        <div className="empty"><p>Chưa có phim nào.</p><Link to="/" className="btn">Tìm phim</Link></div>
+      ) : (
+        <div className="grid">
+          {favs.map((m, i) => (
+            <div key={i} className="card">
+              <Link to={`/movie/${m.movieId||m.id}`} className="img"><img src={getImg(m)} alt={m.title} onError={e=>e.target.src='https://placehold.co/200x300'}/></Link>
+              <div className="body">
+                <Link to={`/movie/${m.movieId||m.id}`} className="name">{m.title}</Link>
+                <div className="meta"><span>{m.year}</span><span className="star">⭐ {m.rate}</span></div>
+                <button onClick={()=>removeFav(m)} className="del">Xóa</button>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-      {favs.length === 0 && <div className="empty-state"><p>Chưa có phim nào trong danh sách.</p><Link to="/" className="home-btn">Quay lại trang chủ</Link></div>}
-      <style>{`.fav-page{max-width:1100px;margin:auto;padding:20px;min-height:80vh}.page-title{color:#333;margin-bottom:20px}.app.dark .page-title{color:#fff}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:20px}.card{background:#222;border-radius:8px;overflow:hidden;box-shadow:0 4px 10px rgba(0,0,0,.1);transition:transform .2s}.card:hover{transform:translateY(-5px)}.img-link{display:block;aspect-ratio:2/3;overflow:hidden}.card img{width:100%;height:100%;object-fit:cover;transition:.3s}.card:hover img{transform:scale(1.05)}.info{padding:10px;display:flex;flex-direction:column;gap:8px}.title{color:#fff!important;text-decoration:none;font-weight:700;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.del-btn{background:#e74c3c;color:#fff;border:none;padding:5px;border-radius:4px;cursor:pointer;font-size:.8rem;transition:.2s}.del-btn:hover{background:#c0392b}.empty-state{text-align:center;margin-top:50px;color:#555}.home-btn{display:inline-block;margin-top:10px;padding:8px 20px;background:#3498db;color:#fff;text-decoration:none;border-radius:5px}`}</style>
+          ))}
+        </div>
+      )}
+      <style>{`.fav-con{max-width:1200px;margin:0 auto;padding:30px 20px;min-height:80vh}.ti{margin-bottom:25px;border-bottom:2px solid #eee;padding-bottom:10px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:25px}.card{background:#2c3e50;border-radius:8px;overflow:hidden;box-shadow:0 4px 10px rgba(0,0,0,.2);transition:transform .2s;display:flex;flex-direction:column}.card:hover{transform:translateY(-5px)}.img{width:100%;aspect-ratio:2/3;display:block;background:#000}.img img{width:100%;height:100%;object-fit:cover}.body{padding:12px;flex:1;display:flex;flex-direction:column;color:#fff}.name{font-weight:700;font-size:1rem;margin-bottom:5px;color:#fff;text-decoration:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.meta{display:flex;justify-content:space-between;font-size:.85rem;color:#bdc3c7;margin-bottom:12px}.star{color:#f1c40f}.del{margin-top:auto;background:#e74c3c;color:#fff;border:none;padding:8px;border-radius:4px;cursor:pointer;font-weight:600}.del:hover{background:#c0392b}.empty{text-align:center;margin-top:50px;color:#7f8c8d}.btn{display:inline-block;margin-top:15px;padding:10px 25px;background:#3498db;color:#fff;text-decoration:none;border-radius:4px}`}</style>
     </div>
   );
 }
