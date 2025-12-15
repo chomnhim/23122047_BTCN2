@@ -6,18 +6,26 @@ export default function SearchPage() {
   const query = searchParams.get('q') || '';
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const appToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IjIzXzMxIiwicm9sZSI6InVzZXIiLCJhcGlfYWNjZXNzIjp0cnVlLCJpYXQiOjE3NjUzNjE3NjgsImV4cCI6MTc3MDU0NTc2OH0.O4I48nov3NLaKDSBhrPe9rKZtNs9q2Tkv4yK0uMthoo";
+
+  useEffect(() => {
+    setPage(1);
+  }, [query]);
 
   useEffect(() => {
     const fetchSearchResults = async () => {
       if (!query.trim()) return;
       setLoading(true);
+      
+      window.scrollTo({ top: 0, behavior: 'smooth' });
 
       try {
         const endpointsToTry = [
-          `/api/movies/search?q=${encodeURIComponent(query)}`,
-          `/api/api/movies/search?q=${encodeURIComponent(query)}`,
+          `/api/movies/search?q=${encodeURIComponent(query)}&page=${page}`,
+          `/api/api/movies/search?q=${encodeURIComponent(query)}&page=${page}`,
         ];
 
         let foundData = false;
@@ -32,6 +40,10 @@ export default function SearchPage() {
               const result = await response.json();
               const searchResults = result.data || result.results || [];
               
+              if (result.pagination && result.pagination.total_pages) {
+                setTotalPages(result.pagination.total_pages);
+              }
+
               if (Array.isArray(searchResults)) {
                  setMovies(searchResults);
                  foundData = true;
@@ -54,27 +66,23 @@ export default function SearchPage() {
     };
 
     fetchSearchResults();
-  }, [query]);
+  }, [query, page]); 
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setPage(newPage);
+    }
+  };
 
   const getMovieYear = (movie) => {
     if (!movie) return 'N/A';
-    
     if (movie.year && !isNaN(movie.year)) return movie.year;
-
-    const dateCandidates = [
-        movie.release_date, 
-        movie.releaseDate, 
-        movie.first_air_date,
-        movie.premiere_date
-    ];
-
+    const dateCandidates = [movie.release_date, movie.releaseDate, movie.first_air_date, movie.premiere_date];
     for (const rawDate of dateCandidates) {
         if (rawDate) {
             const yearMatch = String(rawDate).match(/\d{4}/);
             if (yearMatch) return yearMatch[0];
         }
     }
-    
     return 'N/A';
   };
 
@@ -101,46 +109,69 @@ export default function SearchPage() {
       </div>
       
       {loading ? (
-        <div className="loading-state">Đang tìm kiếm trên Server...</div>
+        <div className="loading-state">Đang tìm kiếm...</div>
       ) : movies.length > 0 ? (
-        <div className="search-grid">
-          {movies.map(movie => {
-            const posterSrc = getPosterURL(movie);
-            const displayYear = getMovieYear(movie); 
-            
-            return (
-              <Link to={`/movie/${movie.id}`} key={movie.id} className="search-card">
-                <div className="card-image-wrapper">
-                  {posterSrc ? (
-                    <img 
-                      src={posterSrc} 
-                      alt={movie.title} 
-                      onError={(e) => { 
-                        e.target.style.display = 'none';
-                        e.target.parentNode.classList.add('fallback-active');
-                      }}
-                    />
-                  ) : (
-                    <div className="fallback-placeholder">
+        <>
+          <div className="search-grid">
+            {movies.map(movie => {
+              const posterSrc = getPosterURL(movie);
+              const displayYear = getMovieYear(movie); 
+              
+              return (
+                <Link to={`/movie/${movie.id}`} key={movie.id} className="search-card">
+                  <div className="card-image-wrapper">
+                    {posterSrc ? (
+                      <img 
+                        src={posterSrc} 
+                        alt={movie.title} 
+                        onError={(e) => { 
+                          e.target.style.display = 'none';
+                          e.target.parentNode.classList.add('fallback-active');
+                        }}
+                      />
+                    ) : (
+                      <div className="fallback-placeholder">
+                          <span className="fallback-icon">🎬</span>
+                      </div>
+                    )}
+                    <div className="fallback-placeholder hidden-fallback">
                         <span className="fallback-icon">🎬</span>
                     </div>
-                  )}
-                  <div className="fallback-placeholder hidden-fallback">
-                      <span className="fallback-icon">🎬</span>
                   </div>
-                </div>
-                
-                <div className="card-content">
-                  <h3 className="movie-title">
-                    {movie.title} <span style={{ fontWeight: 'normal', color: '#888' }}>({displayYear})</span>
-                  </h3>
                   
-                  <div className="movie-genre">{formatGenres(movie.genres)}</div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+                  <div className="card-content">
+                    <h3 className="movie-title">
+                      {movie.title} <span style={{ fontWeight: 'normal', color: '#888' }}>({displayYear})</span>
+                    </h3>
+                    <div className="movie-genre">{formatGenres(movie.genres)}</div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="pagination">
+              <button 
+                onClick={() => handlePageChange(page - 1)} 
+                disabled={page === 1}
+                className="page-btn"
+              >
+                &laquo; Trước
+              </button>
+              
+              <span className="page-info">Trang {page} / {totalPages}</span>
+              
+              <button 
+                onClick={() => handlePageChange(page + 1)} 
+                disabled={page === totalPages}
+                className="page-btn"
+              >
+                Sau &raquo;
+              </button>
+            </div>
+          )}
+        </>
       ) : (
         <div className="no-results">
             <p>Không tìm thấy phim nào khớp với từ khóa "{query}".</p>
@@ -170,18 +201,22 @@ export default function SearchPage() {
         .card-image-wrapper.fallback-active .hidden-fallback { display: flex; }
         
         .card-content { padding: 12px; text-align: center; flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-start; }
-        
-        .movie-title { 
-            font-size: 15px; font-weight: bold; margin: 0 0 5px 0; line-height: 1.3; color: var(--title); 
-        }
-        
+        .movie-title { font-size: 15px; font-weight: bold; margin: 0 0 5px 0; line-height: 1.3; color: var(--title); }
         .movie-genre { font-size: 13px; color: #888; font-style: italic; margin-top: 2px; }
-        
         .loading-state, .no-results { text-align: center; padding: 50px 20px; color: #666; font-size: 16px; }
+
+        /* Style cho Pagination */
+        .pagination { display: flex; justify-content: center; align-items: center; margin-top: 40px; gap: 20px; }
+        .page-btn { padding: 10px 20px; background: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .page-btn:disabled { background: #ccc; cursor: not-allowed; opacity: 0.7; }
+        .page-btn:hover:not(:disabled) { background: #c0392b; }
+        .page-info { font-weight: bold; color: var(--title); }
+
         .dark .search-card { background: #1f2327; border-color: #333; }
         .dark .card-image-wrapper { background: #2c3e50; }
         .dark .movie-genre { color: #aaa; }
         .dark .loading-state, .dark .no-results { color: #999; }
+        .dark .page-info { color: #fff; }
       `}</style>
     </div>
   );
