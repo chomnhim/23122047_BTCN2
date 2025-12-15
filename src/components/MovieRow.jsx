@@ -4,38 +4,56 @@ import { Link } from 'react-router-dom';
 const MovieRow = ({ title, type }) => {
   const [movies, setMovies] = useState([]);
   const [startIndex, setStartIndex] = useState(0);
-  
   const [isAnimating, setIsAnimating] = useState(false); 
+
+  // Token API
+  const appToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IjIzXzMxIiwicm9sZSI6InVzZXIiLCJhcGlfYWNjZXNzIjp0cnVlLCJpYXQiOjE3NjUzNjE3NjgsImV4cCI6MTc3MDU0NTc2OH0.O4I48nov3NLaKDSBhrPe9rKZtNs9q2Tkv4yK0uMthoo";
 
   useEffect(() => {
     const fetchMovies = async () => {
-      const appToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IjIzXzMxIiwicm9sZSI6InVzZXIiLCJhcGlfYWNjZXNzIjp0cnVlLCJpYXQiOjE3NjUzNjE3NjgsImV4cCI6MTc3MDU0NTc2OH0.O4I48nov3NLaKDSBhrPe9rKZtNs9q2Tkv4yK0uMthoo";
       const endpointSuffix = type === 'top_rated' ? 'top-rated' : 'most-popular';
-      const endpointsToTry = [
-        `/api/movies/${endpointSuffix}`,
-        `/api/api/movies/${endpointSuffix}`,
-      ];
+      const baseUrl = `/api/api/movies/${endpointSuffix}`; 
 
-      let response = null;
-      for (const endpoint of endpointsToTry) {
-        try {
-          const testResponse = await fetch(endpoint, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json', 'x-app-token': appToken }
-          });
-          if (testResponse.ok) {
-            response = testResponse;
-            break;
+      try {
+        const resPage1 = await fetch(`${baseUrl}?page=1`, {
+          headers: { 'Content-Type': 'application/json', 'x-app-token': appToken }
+        });
+
+        if (!resPage1.ok) throw new Error("API Error");
+
+        const dataPage1 = await resPage1.json();
+        let allMovies = dataPage1.data || [];
+        
+        const totalPages = dataPage1.pagination ? dataPage1.pagination.total_pages : 1;
+
+        const maxPagesToFetch = Math.min(totalPages, 4); 
+
+        if (maxPagesToFetch > 1) {
+          const promises = [];
+          for (let page = 2; page <= maxPagesToFetch; page++) {
+            promises.push(
+              fetch(`${baseUrl}?page=${page}`, {
+                headers: { 'Content-Type': 'application/json', 'x-app-token': appToken }
+              }).then(res => res.json())
+            );
           }
-        } catch (err) { continue; }
-      }
 
-      if (response && response.ok) {
-        const result = await response.json();
-        const movieList = result.data || result.results || [];
-        setMovies(movieList); 
+          const responses = await Promise.all(promises);
+          
+          responses.forEach(res => {
+            if (res.data) {
+              allMovies = [...allMovies, ...res.data];
+            }
+          });
+        }
+
+        setMovies(allMovies.slice(0, 30));
+
+      } catch (err) {
+        console.error("Lỗi tải danh sách phim:", err);
       }
     };
+
     fetchMovies();
   }, [type]);
 
@@ -49,6 +67,7 @@ const MovieRow = ({ title, type }) => {
       if (direction === 'next') {
         if (startIndex + itemsPerPage < movies.length) {
           setStartIndex(prev => prev + itemsPerPage);
+        } else {
         }
       } else {
         if (startIndex > 0) {
@@ -80,7 +99,6 @@ const MovieRow = ({ title, type }) => {
       </h3>
       
       <div className="row-wrapper">
-        
         {startIndex > 0 && (
           <button className="row-btn prev" onClick={() => handlePageChange('prev')}>&#10094;</button>
         )}

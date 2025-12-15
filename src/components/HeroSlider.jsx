@@ -1,50 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
-const TopRevenueMovies = () => {
+const HeroSlider = () => {
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  const appToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IjIzXzMxIiwicm9sZSI6InVzZXIiLCJhcGlfYWNjZXNzIjp0cnVlLCJpYXQiOjE3NjUzNjE3NjgsImV4cCI6MTc3MDU0NTc2OH0.O4I48nov3NLaKDSBhrPe9rKZtNs9q2Tkv4yK0uMthoo";
+
   useEffect(() => {
     const fetchMovies = async () => {
-      const appToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IjIzXzMxIiwicm9sZSI6InVzZXIiLCJhcGlfYWNjZXNzIjp0cnVlLCJpYXQiOjE3NjUzNjE3NjgsImV4cCI6MTc3MDU0NTc2OH0.O4I48nov3NLaKDSBhrPe9rKZtNs9q2Tkv4yK0uMthoo";
-
       try {
-        const endpointsToTry = [
-          '/api/api/movies/most-popular',
-          '/api/api/movies',
-        ];
+        const baseUrl = '/api/api/movies/most-popular';
         
-        let response = null;
-        
-        for (const endpoint of endpointsToTry) {
-          try {
-            const testResponse = await fetch(endpoint, {
-              method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
-                'x-app-token': appToken
-              }
-            });
-            
-            if (testResponse.ok) {
-              response = testResponse;
-              break;
-            }
-          } catch (err) {
-            continue;
-          }
-        }
-        
-        if (!response || !response.ok) {
-          throw new Error('Không tìm thấy endpoint hợp lệ hoặc lỗi API');
-        }
+        const res = await fetch(`${baseUrl}?page=1`, {
+          headers: { 'Content-Type': 'application/json', 'x-app-token': appToken }
+        });
 
-        const result = await response.json();
-        const movieList = result.data || [];
-        
+        if (!res.ok) throw new Error('Lỗi tải Hero Slider');
+
+        const data = await res.json();
+        let movieList = data.data || [];
+
+        if (movieList.length < 5 && data.pagination && data.pagination.total_pages > 1) {
+            const res2 = await fetch(`${baseUrl}?page=2`, {
+                headers: { 'Content-Type': 'application/json', 'x-app-token': appToken }
+            });
+            const data2 = await res2.json();
+            if (data2.data) {
+                movieList = [...movieList, ...data2.data];
+            }
+        }
         setMovies(movieList.slice(0, 5));
         setLoading(false);
 
@@ -65,18 +52,8 @@ const TopRevenueMovies = () => {
     setCurrentIndex((prevIndex) => (prevIndex === movies.length - 1 ? 0 : prevIndex + 1));
   };
 
-  if (loading) {
-    return (
-      <div className="top-revenue-section" style={{ padding: '20px' }}>
-        <p style={{ color: '#888', fontStyle: 'italic' }}>Loading...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return <div className="top-revenue-section">Error: {error}</div>;
-  }
-
+  if (loading) return <div style={{ padding: '20px', textAlign: 'center' }}>Loading Slider...</div>;
+  if (error) return <div style={{ padding: '20px', textAlign: 'center', color: 'red' }}>Error: {error}</div>;
   if (movies.length === 0) return null;
 
   const movie = movies[currentIndex];
@@ -85,12 +62,9 @@ const TopRevenueMovies = () => {
     <div className="top-revenue-section" style={{ padding: '0 20px', margin: '10px 0 5px 0' }}>
       
       <div className="hero-slider-container">
-        <button className="nav-btn prev-btn" onClick={handlePrev}>
-          &#10094;
-        </button>
+        <button className="nav-btn prev-btn" onClick={handlePrev}>&#10094;</button>
 
         <div className="hero-content" key={movie.id}>
-          
           <div className="poster-container">
              <Link to={`/movie/${movie.id}`} style={{ display: 'block', position: 'relative' }}>
                <img 
@@ -99,7 +73,6 @@ const TopRevenueMovies = () => {
                  className="hero-poster"
                  onError={(e) => { e.target.src = 'https://via.placeholder.com/300x450?text=No+Image'; }}
                />
-               
                <div className="hero-overlay">
                   <div className="play-icon">▶</div>
                </div>
@@ -108,35 +81,21 @@ const TopRevenueMovies = () => {
           
           <div className="movie-info-center">
             <h2 className="hero-title">{movie.title}</h2>
-
             <div className="hero-meta">
-              <span className="meta-item rating">
-                ⭐ {movie.rate || movie.vote_average || 'N/A'}
-              </span>
-
+              <span className="meta-item rating">⭐ {movie.rate || movie.vote_average || 'N/A'}</span>
               <span className="dot-sep">•</span>
-
-              <span className="meta-item">
-                📅 {movie.year || (movie.release_date ? new Date(movie.release_date).getFullYear() : 'N/A')}
-              </span>
-
+              <span className="meta-item">📅 {movie.year || (movie.release_date ? new Date(movie.release_date).getFullYear() : 'N/A')}</span>
               <span className="dot-sep">•</span>
-
-              {movie.box_office_revenue && (
-                <span className="meta-item revenue-text">
-                  💰 {movie.box_office_revenue}
-                </span>
+              {movie.box_office_revenue ? (
+                <span className="meta-item revenue-text">💰 {movie.box_office_revenue}</span>
+              ) : (
+                <span className="meta-item">N/A</span>
               )}
-            </div>
-            
-            <div className="hero-meta-extra">
             </div>
           </div>
         </div>
 
-        <button className="nav-btn next-btn" onClick={handleNext}>
-          &#10095;
-        </button>
+        <button className="nav-btn next-btn" onClick={handleNext}>&#10095;</button>
       </div>
       
       <div className="slider-dots">
@@ -152,4 +111,4 @@ const TopRevenueMovies = () => {
   );
 };
 
-export default TopRevenueMovies;
+export default HeroSlider;
