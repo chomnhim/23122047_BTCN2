@@ -4,7 +4,8 @@ import MovieRow from "../components/MovieRow";
 
 export default function Home() {
   return (
-    <div className="home-page" style={{ paddingBottom: '40px' }}>
+    <div className="home-page" style={{ paddingBottom: '60px', overflowX: 'hidden' }}>
+      
       <HeroSlider />
 
       <MovieRow 
