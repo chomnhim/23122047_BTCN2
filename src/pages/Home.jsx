@@ -18,6 +18,14 @@ export default function Home() {
         type="top_rated" 
       />
 
+      <style>{`
+        .app.dark .home-page h2,
+        .app.dark .home-page h3,
+        .app.dark .section-title {
+          color: #ffffff;
+        }
+      `}</style>
+
     </div>
   );
 }

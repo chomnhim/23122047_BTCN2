@@ -3,24 +3,24 @@ import { useParams, Link } from 'react-router-dom';
 
 export default function PersonDetail() {
   const { id } = useParams();
-  const [state, setState] = useState({ data: null, loading: true, error: null });
+  const [s, setS] = useState({ d: null, l: true, e: null });
 
   useEffect(() => {
     fetch(`/api/api/persons/${id}`, {
       headers: { 'Content-Type': 'application/json', 'x-app-token': "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IjIzXzMxIiwicm9sZSI6InVzZXIiLCJhcGlfYWNjZXNzIjp0cnVlLCJpYXQiOjE3NjUzNjE3NjgsImV4cCI6MTc3MDU0NTc2OH0.O4I48nov3NLaKDSBhrPe9rKZtNs9q2Tkv4yK0uMthoo" }
     })
       .then(res => res.ok ? res.json() : Promise.reject('Not found'))
-      .then(d => setState({ data: d.data || d, loading: false, error: null }))
-      .catch(e => setState({ data: null, loading: false, error: e.toString() }));
+      .then(d => setS({ d: d.data || d, l: false, e: null }))
+      .catch(e => setS({ d: null, l: false, e: e.toString() }));
   }, [id]);
 
-  const getImg = (src) => src?.startsWith('http') ? src : src ? `https://image.tmdb.org/t/p/original${src}` : 'https://placehold.co/300x450?text=No+Image';
+  const getImg = (src) => src?.startsWith('http') ? src : src ? `https://image.tmdb.org/t/p/w500${src}` : 'https://placehold.co/300x450?text=No+Image';
 
-  if (state.loading) return <div className="center">Loading...</div>;
-  if (state.error) return <div className="center"><h2>Not found</h2><Link to="/">Back</Link></div>;
+  if (s.l) return <div className="center">Loading...</div>;
+  if (s.e) return <div className="center"><h2>Not found</h2><Link to="/">Back</Link></div>;
 
-  const p = state.data;
-  const credits = p.known_for || [];
+  const p = s.d;
+  const c = p.known_for || [];
 
   return (
     <div className="person-page">
@@ -40,17 +40,19 @@ export default function PersonDetail() {
       <div className="person-credits">
         <h2>Known For</h2>
         <div className="credits-grid">
-          {credits.map(m => (
+          {c.map(m => (
             <Link to={`/movie/${m.id}`} key={m.id} className="credit-card">
-              <img src={getImg(m.image || m.poster_path)} alt={m.title} onError={e => e.target.src='https://placehold.co/200x300?text=No+Image'}/>
+              <div className="img-wrapper">
+                <img src={getImg(m.image || m.poster_path)} alt={m.title} onError={e => e.target.src='https://placehold.co/200x300?text=No+Image'}/>
+              </div>
               <div className="credit-title">{m.title}</div>
               {m.character && <div className="credit-role">as {m.character}</div>}
             </Link>
           ))}
         </div>
-        {!credits.length && <p>No movies found.</p>}
+        {!c.length && <p>No movies found.</p>}
       </div>
-      <style>{`.person-page{padding:40px 20px;max-width:1100px;margin:auto}.person-header{display:flex;gap:40px;flex-wrap:wrap}.person-img img{width:300px;border-radius:12px}.person-info{flex:1}.person-info h1{margin-top:0}.person-info p{line-height:1.6;color:#333;margin-bottom:10px;text-align:justify}.dark .person-info p{color:#ddd}.person-credits{margin-top:60px}.credits-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:20px}.credit-card{text-decoration:none;color:inherit}.credit-card img{width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:8px}.credit-title{font-weight:bold;margin-top:6px}.credit-role{font-size:.85rem;opacity:.8}.center{padding:40px;text-align:center}`}</style>
+      <style>{`.person-page{padding:40px 20px;max-width:1100px;margin:auto}.person-header{display:flex;gap:40px;flex-wrap:wrap}.person-img img{width:300px;border-radius:12px}.person-info{flex:1}.person-info h1,.person-info h3,.person-credits h2{margin-top:0;color:#333}.person-info p{line-height:1.6;color:#333;margin-bottom:10px;text-align:justify}.person-info strong{color:#000}.person-credits{margin-top:60px}.credits-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:20px}.credit-card{text-decoration:none;color:inherit;display:block}.img-wrapper{width:100%;aspect-ratio:2/3;background:#eee;border-radius:8px;overflow:hidden}.img-wrapper img{width:100%;height:100%;object-fit:cover;transition:.3s}.credit-card:hover img{transform:scale(1.05)}.credit-title{font-weight:700;margin-top:6px;color:#333}.credit-role{font-size:.85rem;opacity:.8;color:#666}.center{padding:40px;text-align:center}.app.dark .person-info h1,.app.dark .person-info h3,.app.dark .person-credits h2,.app.dark .credit-title,.app.dark .center{color:#fff}.app.dark .person-info p{color:#ddd}.app.dark .person-info strong{color:#fff}.app.dark .credit-role{color:#aaa}.app.dark .img-wrapper{background:#333}`}</style>
     </div>
   );
 }
