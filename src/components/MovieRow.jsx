@@ -15,6 +15,7 @@ const MovieRow = ({ title, type }) => {
       const baseUrl = `/api/api/movies/${endpointSuffix}`; 
 
       try {
+        // BƯỚC 1: Lấy danh sách Top Rated sơ bộ (chỉ có ID, Title...)
         const resPage1 = await fetch(`${baseUrl}?page=1`, {
           headers: { 'Content-Type': 'application/json', 'x-app-token': appToken }
         });
@@ -22,10 +23,10 @@ const MovieRow = ({ title, type }) => {
         if (!resPage1.ok) throw new Error("API Error");
 
         const dataPage1 = await resPage1.json();
-        let allMovies = dataPage1.data || [];
+        let simpleMovies = dataPage1.data || [];
         
+        // Lấy thêm trang 2, 3, 4 nếu cần để đủ số lượng
         const totalPages = dataPage1.pagination ? dataPage1.pagination.total_pages : 1;
-
         const maxPagesToFetch = Math.min(totalPages, 4); 
 
         if (maxPagesToFetch > 1) {
@@ -34,20 +35,42 @@ const MovieRow = ({ title, type }) => {
             promises.push(
               fetch(`${baseUrl}?page=${page}`, {
                 headers: { 'Content-Type': 'application/json', 'x-app-token': appToken }
-              }).then(res => res.json())
+              }).then(res => res.json()).catch(() => ({ data: [] }))
             );
           }
-
           const responses = await Promise.all(promises);
-          
           responses.forEach(res => {
-            if (res.data) {
-              allMovies = [...allMovies, ...res.data];
-            }
+            if (res.data) simpleMovies = [...simpleMovies, ...res.data];
           });
         }
 
-        setMovies(allMovies.slice(0, 30));
+        // Cắt lấy 30 phim đầu tiên
+        const top30 = simpleMovies.slice(0, 30);
+
+        // BƯỚC 2: "NÂNG CẤP" DỮ LIỆU
+        // Gọi API chi tiết cho từng phim để lấy thông tin Năm sản xuất chính xác
+        const detailedMovies = await Promise.all(
+          top30.map(async (movie) => {
+            try {
+              // Gọi endpoint chi tiết: /api/api/movies/{id}
+              const detailRes = await fetch(`/api/api/movies/${movie.id}`, {
+                 headers: { 'Content-Type': 'application/json', 'x-app-token': appToken }
+              });
+              
+              if (detailRes.ok) {
+                const detailData = await detailRes.json();
+                // API chi tiết thường trả về dữ liệu đầy đủ có trường 'year'
+                // Ưu tiên dữ liệu chi tiết, nếu lỗi thì dùng lại dữ liệu cũ
+                return detailData.data || detailData || movie;
+              }
+            } catch (err) {
+              console.warn(`Lỗi lấy chi tiết phim ${movie.id}`, err);
+            }
+            return movie; // Trả về phim gốc nếu không lấy được chi tiết
+          })
+        );
+
+        setMovies(detailedMovies);
 
       } catch (err) {
         console.error("Lỗi tải danh sách phim:", err);
@@ -57,36 +80,56 @@ const MovieRow = ({ title, type }) => {
     fetchMovies();
   }, [type]);
 
+  // --- HÀM XỬ LÝ NĂM (Vẫn giữ logic mạnh mẽ để parse mọi định dạng) ---
+  const getMovieYear = (movie) => {
+    if (!movie) return 'N/A';
+    
+    // 1. Kiểm tra trường 'year' (Giờ đây đã có nhờ Bước 2)
+    if (movie.year && !isNaN(movie.year)) return movie.year;
+
+    // 2. Quét các trường ngày tháng khác để dự phòng
+    const dateCandidates = [
+        movie.release_date, 
+        movie.releaseDate, 
+        movie.first_air_date,
+        movie.premiere_date
+    ];
+
+    for (const rawDate of dateCandidates) {
+        if (rawDate) {
+            const yearMatch = String(rawDate).match(/\d{4}/);
+            if (yearMatch) return yearMatch[0];
+        }
+    }
+    
+    return 'N/A';
+  };
+  // -----------------------------------------------------
+
+  const getPosterURL = (movie) => {
+    const imgSrc = movie.image || movie.poster || movie.poster_path;
+    if (!imgSrc || imgSrc === 'N/A') return 'https://via.placeholder.com/300x450?text=No+Image';
+    if (imgSrc.startsWith('http')) return imgSrc;
+    return `https://image.tmdb.org/t/p/w500${imgSrc}`;
+  };
+
+  // --- LOGIC SLIDER GIỮ NGUYÊN ---
   const itemsPerPage = 3; 
 
   const handlePageChange = (direction) => {
     if (isAnimating) return; 
-
     setIsAnimating(true); 
     setTimeout(() => {
       if (direction === 'next') {
-        if (startIndex + itemsPerPage < movies.length) {
-          setStartIndex(prev => prev + itemsPerPage);
-        } else {
-        }
+        if (startIndex + itemsPerPage < movies.length) setStartIndex(prev => prev + itemsPerPage);
       } else {
-        if (startIndex > 0) {
-          setStartIndex(prev => prev - itemsPerPage);
-        }
+        if (startIndex > 0) setStartIndex(prev => prev - itemsPerPage);
       }
       setIsAnimating(false);
     }, 300);
   };
 
-  const getPosterURL = (movie) => {
-    const imgSrc = movie.image || movie.poster || movie.poster_path;
-    if (!imgSrc) return 'https://via.placeholder.com/300x450?text=No+Image';
-    if (imgSrc.startsWith('http')) return imgSrc;
-    return `https://image.tmdb.org/t/p/w500${imgSrc}`;
-  };
-
   if (movies.length === 0) return null;
-
   const visibleMovies = movies.slice(startIndex, startIndex + itemsPerPage);
 
   return (
@@ -116,9 +159,12 @@ const MovieRow = ({ title, type }) => {
                     />
                     <div className="card-overlay">
                         <h4 className="card-title">{movie.title}</h4>
+                        
                         <div className="card-meta">
-                            {movie.year || (movie.release_date ? new Date(movie.release_date).getFullYear() : 'N/A')}
+                            {/* Giờ đây thông tin năm sẽ chính xác hơn rất nhiều */}
+                            {getMovieYear(movie)}
                         </div>
+                        
                         <div className="play-icon">▶</div>
                     </div>
                 </div>
