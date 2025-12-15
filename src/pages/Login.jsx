@@ -1,29 +1,34 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 
 export default function Login() {
-  const [u, setU] = useState('');
-  const [p, setP] = useState('');
-  const { login } = useAuth();
+  const [f, setF] = useState({ u: '', p: '' });
   const [err, setErr] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
 
-  const hSubmit = async (e) => {
+  const sub = async (e) => {
     e.preventDefault();
-    const success = await login(u, p);
-    if (!success) setErr('Sai tài khoản hoặc mật khẩu (Thử admin/123)');
+    setLoading(true);
+    setErr('');
+    
+    const ok = await login(f.u, f.p);
+    if (!ok) {
+        setErr('Đăng nhập thất bại. Kiểm tra lại thông tin.');
+        setLoading(false);
+    }
   };
 
   return (
-    <div className="auth-container">
+    <div className="auth-box">
       <h2>Login</h2>
-      <form onSubmit={hSubmit}>
-        <input placeholder="Username" value={u} onChange={e=>setU(e.target.value)} required />
-        <input type="password" placeholder="Password" value={p} onChange={e=>setP(e.target.value)} required />
+      <form onSubmit={sub}>
+        <input placeholder="Username" value={f.u} onChange={e=>setF({...f, u:e.target.value})} required />
+        <input type="password" placeholder="Password" value={f.p} onChange={e=>setF({...f, p:e.target.value})} required />
         {err && <p className="err">{err}</p>}
-        <button type="submit">Login</button>
+        <button type="submit" disabled={loading}>{loading ? 'Processing...' : 'Login'}</button>
       </form>
-      <style>{`.auth-container{max-width:400px;margin:50px auto;padding:30px;border:1px solid #ccc;border-radius:8px;text-align:center}.auth-container input{display:block;width:100%;margin-bottom:15px;padding:10px;box-sizing:border-box}.auth-container button{padding:10px 20px;cursor:pointer}.err{color:red}`}</style>
+      <style>{`.auth-box{max-width:400px;margin:50px auto;padding:30px;border:1px solid #ccc;border-radius:8px;text-align:center}.auth-box input{display:block;width:100%;margin-bottom:15px;padding:10px;box-sizing:border-box}.auth-box button{padding:10px 20px;cursor:pointer;background:#e74c3c;color:#fff;border:none;border-radius:4px}.auth-box button:disabled{opacity:.6}.err{color:red;margin-bottom:10px}`}</style>
     </div>
   );
 }
